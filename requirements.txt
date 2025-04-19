@@ -1,0 +1,11 @@
+streamlit>=1.31.0
+requests>=2.31.0
+deepdiff>=6.7.1
+python-dotenv>=1.0.0
+
+# Development dependencies
+flake8>=7.0.0
+black>=24.2.0
+isort>=5.13.0
+pytest>=8.0.0
+pytest-cov>=4.1.0

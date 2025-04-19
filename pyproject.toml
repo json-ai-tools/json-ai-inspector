@@ -1,0 +1,54 @@
+[tool.black]
+line-length = 88
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/build/
+^/dist/
+^/.git/
+^/__pycache__/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "--cov=. --cov-report=term-missing --cov-report=html --verbose"
+markers = [
+    "unit: mark a test as a unit test",
+    "integration: mark test as an integration test",
+    "ui: mark test as a UI test",
+    "asyncio: mark test as an async test"
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = [
+    "app.py",
+    "json_inspector.py",
+    "tests"
+]
+omit = [
+    "tests/conftest.py",
+    "*/__pycache__/*",
+    "*.pyc"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+    "raise AssertionError",
+    "pass",
+    "if 0:",
+    "if False:"
+]

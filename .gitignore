@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Streamlit
+.streamlit/
+
+# Environment variables
+.env
+.env.*
