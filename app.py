@@ -388,6 +388,10 @@ class JSONInspectorUI:
 
     def render_history(self):
         """Renderizar historial de JSON."""
+        col1, col2, col3 = st.columns(3)
+        # Aquí debes definir o recuperar json_input según corresponda, por ejemplo del estado de sesión o como argumento
+        json_input = st.session_state.get("format_json_input", "")
+
         if col2.button(self.t["export_csv_btn"], key="export_csv_btn"):
             success, error_msg, csv_data = json_to_csv(json_input)
             if success:
