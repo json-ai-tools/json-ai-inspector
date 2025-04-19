@@ -1,5 +1,6 @@
 """Tests for the JSON AI Inspector UI."""
 
+import json
 import pytest
 import sys
 from unittest.mock import patch, MagicMock
@@ -156,3 +157,107 @@ def test_compare_section_with_different_jsons(ui, valid_json, complex_json):
         ui.compare_section()
         mock_error.assert_called_once()
         mock_json.assert_called_once()
+
+
+@pytest.fixture
+def type_structure():
+    """Return a sample JSON structure with type definitions."""
+    return {
+        "id": "objectId",
+        "name": "string",
+        "email": "email",
+        "age": "integer",
+        "score": "number",
+        "active": "boolean",
+        "created": "date",
+        "tags": "array<string>",
+        "profile": {
+            "phone": "phone",
+            "website": "url"
+        }
+    }
+
+
+def test_mock_data_section_with_valid_input(ui, type_structure):
+    """Test mock data generation section with valid input."""
+    with patch("streamlit.header"), \
+         patch("streamlit.write"), \
+         patch("streamlit.expander") as mock_expander, \
+         patch("streamlit.text_area", return_value=json.dumps(type_structure)), \
+         patch("streamlit.number_input", return_value=5), \
+         patch("streamlit.button", return_value=True), \
+         patch("streamlit.success") as mock_success, \
+         patch("streamlit.json") as mock_json, \
+         patch("streamlit.download_button") as mock_download, \
+         patch("streamlit.session_state", new_callable=dict) as mock_state:
+        
+        mock_state["mock_data_history"] = []
+        mock_expander.__enter__ = MagicMock()
+        mock_expander.__exit__ = MagicMock()
+        
+        ui.mock_data_section()
+        
+        mock_success.assert_called_once()
+        mock_json.assert_called_once()
+        mock_download.assert_called_once()
+        assert len(mock_state["mock_data_history"]) == 1
+
+
+def test_mock_data_section_with_invalid_json(ui):
+    """Test mock data generation section with invalid JSON."""
+    with patch("streamlit.header"), \
+         patch("streamlit.write"), \
+         patch("streamlit.expander") as mock_expander, \
+         patch("streamlit.text_area", return_value="{invalid json}"), \
+         patch("streamlit.number_input", return_value=5), \
+         patch("streamlit.button", return_value=True), \
+         patch("streamlit.error") as mock_error:
+        
+        mock_expander.__enter__ = MagicMock()
+        mock_expander.__exit__ = MagicMock()
+        
+        ui.mock_data_section()
+        mock_error.assert_called_once()
+
+
+def test_mock_data_section_with_invalid_records(ui, type_structure):
+    """Test mock data generation section with invalid number of records."""
+    with patch("streamlit.header"), \
+         patch("streamlit.write"), \
+         patch("streamlit.expander") as mock_expander, \
+         patch("streamlit.text_area", return_value=json.dumps(type_structure)), \
+         patch("streamlit.number_input", return_value=1001), \
+         patch("streamlit.button", return_value=True), \
+         patch("streamlit.error") as mock_error:
+        
+        mock_expander.__enter__ = MagicMock()
+        mock_expander.__exit__ = MagicMock()
+        
+        ui.mock_data_section()
+        mock_error.assert_called_once()
+
+
+def test_mock_data_history(ui, type_structure):
+    """Test mock data history functionality."""
+    with patch("streamlit.header"), \
+         patch("streamlit.write"), \
+         patch("streamlit.expander") as mock_expander, \
+         patch("streamlit.text_area", return_value=json.dumps(type_structure)), \
+         patch("streamlit.number_input", return_value=5), \
+         patch("streamlit.button", return_value=True), \
+         patch("streamlit.success"), \
+         patch("streamlit.json"), \
+         patch("streamlit.download_button"), \
+         patch("streamlit.session_state", new_callable=dict) as mock_state:
+        
+        # Inicializar historial vacío
+        mock_state["mock_data_history"] = []
+        mock_expander.__enter__ = MagicMock()
+        mock_expander.__exit__ = MagicMock()
+        
+        # Generar datos dos veces
+        ui.mock_data_section()
+        ui.mock_data_section()
+        
+        # Verificar que se guardaron dos conjuntos de datos
+        assert len(mock_state["mock_data_history"]) == 2

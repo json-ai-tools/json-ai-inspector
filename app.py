@@ -1,11 +1,35 @@
 """
-JSON AI Inspector - A Streamlit app for JSON analysis and comparison.
+JSON AI Inspector - A Streamlit app for JSON analysis, comparison, and data generation.
 
 This module implements the user interface using Streamlit and handles:
-- Internationalization (i18n)
-- Session state
-- Groq AI integration
+- Internationalization (i18n) with Spanish/English support
+- Session state management and history
+- Groq AI integration for JSON analysis
 - JSON formatting and comparison
+- CSV export for Excel compatibility
+- Mock data generation with type inference
+- Type definitions generation for Python/Go/TypeScript
+
+Features:
+1. JSON Formatting
+   - Pretty print JSON with syntax highlighting
+   - Export to CSV for Excel compatibility
+   - Generate type definitions
+
+2. AI Analysis
+   - Natural language queries about JSON structure
+   - Powered by Groq AI for intelligent responses
+
+3. JSON Comparison
+   - Compare two JSON structures
+   - Highlight differences and changes
+
+4. Mock Data Generation
+   - Generate sample data based on JSON structure
+   - Support for common data types (string, number, date, etc.)
+   - Custom types like email, phone, url, objectId
+   - Array support with type inference
+   - History of generated datasets
 
 To run the application:
     $ streamlit run app.py
@@ -19,7 +43,10 @@ from deepdiff import DeepDiff
 from dotenv import load_dotenv
 import json
 import streamlit as st
-from json_inspector import is_json_related, format_json, compare_json
+from json_inspector import (
+    is_json_related, format_json, compare_json, json_to_csv,
+    generate_types, generate_mock_data
+)
 
 # Cargar variables de entorno
 load_dotenv()
@@ -70,6 +97,16 @@ class JSONInspectorUI:
                 "title": "JSON AI Inspector",
                 "json_input": "Ingresa tu JSON",
                 "format_btn": "Formatear JSON",
+                "export_csv_btn": "Exportar a CSV",
+                "csv_success": "JSON exportado a CSV correctamente",
+                "csv_error": "Error al exportar a CSV",
+                "generate_types_btn": "Generar Tipos",
+                "types_title": "Tipos Generados",
+                "python_tab": "Python",
+                "typescript_tab": "TypeScript",
+                "golang_tab": "Golang",
+                "types_error": "Error al generar tipos",
+                "base_name_label": "Nombre base para los tipos",
                 "question_label": "Pregunta sobre el JSON",
                 "ask_btn": "Preguntar a la IA",
                 "no_api_key": "No se ha configurado la API key de Groq",
@@ -89,11 +126,27 @@ class JSONInspectorUI:
                 "donate": "Apoya el proyecto 💖",
                 "limit_msg": "Has alcanzado el límite gratuito de preguntas IA.",
                 "invalid_question": "❌ La pregunta no parece estar relacionada con el JSON. Reformúlala.",
+                "mock_data_title": "Mock Data Generator",
+                "mock_data_description": "Generate mock data based on JSON structure",
+                "mock_data_example_title": "Example Structure",
+                "mock_data_example_description": "Define data types using a JSON structure. Supported types: string, integer, number, boolean, date, email, phone, url, objectId, array<type>",
+                "mock_data_input": "JSON structure for generating data",
+                "mock_data_btn": "Generate Data",
+                "mock_data_records": "Number of records",
+                "mock_data_success": "Data generated successfully",
+                "mock_data_error": "Error generating data",
+                "mock_data_export": "Export JSON",
+                "mock_data_history": "Data History",
+                "mock_data_help": "Help",
+                "mock_data_help_text": "Use this generator to create mock data based on a JSON structure. Define data types using a simple JSON structure.",
             },
             "English": {
                 "title": "JSON AI Inspector",
                 "json_input": "Enter your JSON",
                 "format_btn": "Format JSON",
+                "export_csv_btn": "Export to CSV",
+                "csv_success": "JSON exported to CSV successfully",
+                "csv_error": "Error exporting to CSV",
                 "question_label": "Question about the JSON",
                 "ask_btn": "Ask AI",
                 "no_api_key": "Groq API key not configured",
@@ -113,6 +166,24 @@ class JSONInspectorUI:
                 "donate": "Support the project 💖",
                 "limit_msg": "You have reached the free usage limit for AI questions.",
                 "invalid_question": "❌ The question doesn't seem to be related to JSON. Please rephrase it.",
+                "generate_types_btn": "Generate Types",
+                "types_title": "Generated Types",
+                "python_tab": "Python",
+                "typescript_tab": "TypeScript",
+                "golang_tab": "Golang",
+                "types_error": "Error generating types",
+                "base_name_label": "Base name for types",
+                "mock_data_title": "3. Data Generation",
+                "mock_data_description": "Generate dummy data based on JSON structure.",
+                "mock_data_example_title": "Example Structure",
+                "mock_data_example_description": "You can use this structure as a base and modify it according to your needs. Supported types are: string, integer, number, boolean, date, email, phone, url, objectId and array<type>.",
+                "num_records_label": "Number of records (max. 1000)",
+                "generate_mock_btn": "Generate Data",
+                "mock_data_success": "Data generated successfully",
+                "mock_data_error": "Error generating data",
+                "mock_data_json": "Generated JSON",
+                "mock_data_export": "Export JSON",
+                "mock_data_history": "Generated data history",
             },
         }
         self.t = self.texts[self.lang]
@@ -123,6 +194,8 @@ class JSONInspectorUI:
             st.session_state["json_history"] = []
         if "ia_uses" not in st.session_state:
             st.session_state["ia_uses"] = 0
+        if "mock_data_history" not in st.session_state:
+            st.session_state["mock_data_history"] = []
 
     def render_header(self):
         """Renderizar el encabezado y botón de donación."""
@@ -140,20 +213,21 @@ class JSONInspectorUI:
         )
 
     def format_section(self):
-        """Sección de formateo de JSON."""
-        st.header("1. JSON")
-        input_json = st.text_area(self.t["json_input"], height=200)
+        """Sección para formatear JSON."""
+        st.header("1. Formateo")
+        json_input = st.text_area(self.t["json_input"], key="format_json_input")
 
-        if st.button(self.t["format_btn"]):
-            success, result, data = format_json(input_json)
+        if st.button(self.t["format_btn"], key="format_btn"):
+            success, result, data = format_json(json_input)
             if success:
                 st.code(result, language="json")
+                st.success(self.t["json_formatted"])
                 st.session_state["json_history"].append(
                     {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "json": data}
                 )
                 st.success(self.t["json_saved"])
             else:
-                st.error(f"❌ Error: {result}")
+                st.error(f"❌ {self.t['invalid_json']}: {result}")
 
     def ask_ai(self, question: str, json_data: dict) -> str:
         """Hacer una pregunta a la IA sobre el JSON.
@@ -239,35 +313,118 @@ class JSONInspectorUI:
             else:
                 st.error(error_msg)
 
+    def mock_data_section(self):
+        """Sección para generar datos dummy."""
+        st.header(self.t["mock_data_title"])
+        st.write(self.t["mock_data_description"])
+
+        # Inicializar historial de datos generados si no existe
+        if "mock_data_history" not in st.session_state:
+            st.session_state["mock_data_history"] = []
+
+        # Ejemplo de estructura JSON
+        example_json = {
+            "id": "objectId",
+            "name": "string",
+            "email": "email",
+            "age": "integer",
+            "score": "number",
+            "active": "boolean",
+            "created": "date",
+            "tags": "array<string>",
+            "profile": {
+                "phone": "phone",
+                "website": "url"
+            }
+        }
+
+        # Mostrar ejemplo y explicación
+        with st.expander("📝 " + self.t["mock_data_example_title"]):
+            st.write(self.t["mock_data_example_description"])
+            st.code(json.dumps(example_json, indent=2), language="json")
+
+        # Input para el JSON y número de registros
+        json_input = st.text_area(self.t["mock_data_input"], key="mock_data_input")
+        num_records = st.number_input(
+            self.t["mock_data_records"],
+            min_value=1,
+            max_value=1000,
+            value=5,
+            key="mock_data_records",
+        )
+
+        button_pressed = st.button(self.t["mock_data_btn"], key="mock_data_btn")
+        if button_pressed:
+            success, error_msg, records = generate_mock_data(json_input, num_records)
+            if success:
+                # Mostrar datos generados y guardar en historial
+                st.success(self.t["mock_data_success"])
+                st.json(records)
+                st.session_state["mock_data_history"].append({
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "json": records
+                })
+                # Botón de exportación
+                st.download_button(
+                    label=self.t["mock_data_export"],
+                    data=json.dumps(records, indent=2),
+                    file_name=f"mock_data_{datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}.json",
+                    mime="application/json",
+                )
+            else:
+                st.error(f"❌ {self.t['mock_data_error']}: {error_msg}")
+        # Mostrar historial solo si no se acaba de presionar el botón
+        elif st.session_state["mock_data_history"]:
+            st.subheader(self.t["mock_data_history"])
+            for item in st.session_state["mock_data_history"]:
+                with st.expander(f"📅 {item['timestamp']}"):
+                    st.code(json.dumps(item['json'], indent=2), language="json")
+                    st.download_button(
+                        label=self.t["mock_data_export"],
+                        data=json.dumps(item['json'], indent=2),
+                        file_name=f"mock_data_{item['timestamp'].replace(' ', '_')}.json",
+                        mime="application/json",
+                    )
+
     def render_history(self):
         """Renderizar historial de JSON."""
-        st.sidebar.header("Historial")
-        for item in st.session_state["json_history"]:
-            with st.sidebar.expander(f"{item['timestamp']}"):
-                st.json(item["json"])
-
-    def format_section(self):
-        """Sección para formatear JSON."""
-        st.header("1. Formateo")
-        json_input = st.text_area(self.t["json_input"])
-
-        if st.button(self.t["format_btn"]):
-            success, result, data = format_json(json_input)
+        if col2.button(self.t["export_csv_btn"], key="export_csv_btn"):
+            success, error_msg, csv_data = json_to_csv(json_input)
             if success:
-                st.code(result, language="json")
-                st.success(self.t["json_formatted"])
-                st.session_state["json_history"].append(
-                    {"timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), "json": data}
+                st.download_button(
+                    label="📥 Descargar CSV",
+                    data=csv_data,
+                    file_name="json_export.csv",
+                    mime="text/csv",
                 )
-                st.success(self.t["json_saved"])
+                st.success(self.t["csv_success"])
             else:
-                st.error(f"❌ Error: {result}")
+                st.error(f"❌ {self.t['csv_error']}: {error_msg}")
+
+        if col3.button(self.t["generate_types_btn"], key="generate_types_btn"):
+            base_name = st.text_input(self.t["base_name_label"], value="Root", key="base_name_input")
+            success, error_msg, types = generate_types(json_input, base_name)
+            if success:
+                st.header(self.t["types_title"])
+                tabs = st.tabs([self.t["python_tab"], self.t["typescript_tab"], self.t["golang_tab"]])
+                
+                with tabs[0]:
+                    st.code(types["python"], language="python")
+                
+                with tabs[1]:
+                    st.code(types["typescript"], language="typescript")
+                
+                with tabs[2]:
+                    st.code(types["golang"], language="go")
+            else:
+                st.error(f"❌ {self.t['types_error']}: {error_msg}")
 
     def run(self):
         """Ejecutar la aplicación."""
         self.format_section()
-        self.ai_section()
         self.compare_section()
+        self.mock_data_section()
+        self.ai_section()
         self.render_history()
 
 

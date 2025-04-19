@@ -5,29 +5,40 @@
 <a name="english"></a>
 ## English
 
-A web application built with Streamlit to inspect, format, and compare JSONs with AI capabilities.
+A Streamlit application for JSON analysis, comparison, and data generation using AI.
 
-### Features
+## Features
 
-- 🎨 **JSON Formatting**: Format and validate JSON structures
-- 🤖 **AI Analysis**: Ask questions about JSON structure and content using Groq AI
-- 🔍 **Comparison**: Compare two JSONs and show their differences
-- 🌐 **Internationalization**: Supports English and Spanish
-- 📝 **History**: Keeps track of formatted JSONs
+### 1. JSON Formatting
+- Pretty print JSON with syntax highlighting
+- Export to CSV for Excel compatibility
+- Generate type definitions for Python, Go, and TypeScript
 
-### Requirements
+### 2. AI Analysis
+- Ask questions about your JSON in natural language
+- Get intelligent responses powered by Groq AI
+- Contextual understanding of JSON structure
 
-- Python 3.8+
-- Streamlit
-- Requests
-- DeepDiff
-- python-dotenv
+### 3. JSON Comparison
+- Compare two JSON structures side by side
+- Highlight differences and changes
+- Detailed comparison report
 
-### Installation
+### 4. Mock Data Generation
+- Generate sample data based on JSON structure
+- Support for common data types:
+  - Basic types: string, integer, number, boolean
+  - Date and time formats
+  - Special types: email, phone, url, objectId
+  - Arrays with type inference
+- History of generated datasets
+- Export generated data
 
-1. Clone the repository:
-```bash
-git clone https://github.com/your-username/json-ai-inspector.git
+### Additional Features
+- Internationalization (Spanish/English)
+- Session state management
+- History tracking
+- Dark/Light mode support
 cd json-ai-inspector
 ```
 
@@ -58,6 +69,11 @@ Una aplicación web construida con Streamlit para inspeccionar, formatear y comp
 - 🔍 **Comparación**: Compara dos JSONs y muestra sus diferencias
 - 🌐 **Internacionalización**: Soporta Español e Inglés
 - 📝 **Historial**: Mantiene un historial de los JSONs formateados
+- 📊 **Exportación CSV**: Convierte JSON a CSV para compatibilidad con Excel
+- 🎲 **Generación de Datos de Prueba**: Genera datos de ejemplo y definiciones de tipos para:
+  - Python
+  - Golang
+  - TypeScript
 
 ### Requisitos
 
