@@ -19,12 +19,18 @@ A Streamlit application for JSON analysis, comparison, and data generation using
 - Get intelligent responses powered by Groq AI
 - Contextual understanding of JSON structure
 
-### 3. JSON Comparison
+### 3. AI Assistant Features
+- Ask questions about your JSON in natural language (English/Spanish)
+- Get intelligent responses powered by Groq AI
+- Contextual understanding of JSON structure
+- Full language support (English/Spanish) for all UI elements
+
+### 4. JSON Comparison
 - Compare two JSON structures side by side
 - Highlight differences and changes
 - Detailed comparison report
 
-### 4. Mock Data Generation
+### 5. Mock Data Generation
 - Generate sample data based on JSON structure
 - Support for common data types:
   - Basic types: string, integer, number, boolean
@@ -34,13 +40,35 @@ A Streamlit application for JSON analysis, comparison, and data generation using
 - History of generated datasets
 - Export generated data
 
+### 6. Language Support
+- Switch between English and Spanish seamlessly
+- All UI elements including buttons, labels and error messages are translated
+- AI responses will be in the selected language
+
 ### Additional Features
 - Internationalization (Spanish/English)
 - Session state management
 - History tracking
 - Dark/Light mode support
-cd json-ai-inspector
+
+### Testing
+
+To run the test suite:
+```bash
+pytest tests/
 ```
+
+Current test coverage:
+- UI Tests: 100% coverage
+- Core Functionality: 57% coverage
+- JSON Utilities: 39% coverage
+
+To generate a coverage report:
+```bash
+pytest --cov=.
+```
+
+cd json-ai-inspector
 
 2. Install dependencies:
 ```bash

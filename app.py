@@ -94,6 +94,9 @@ class JSONInspectorUI:
         self.lang = st.sidebar.selectbox("Idioma / Language", ["Español", "English"])
         self.texts = {
             "Español": {
+                "mock_data_input": "Estructura JSON para generar datos",
+                "mock_data_records": "Cantidad de registros",
+                "generate_mock_btn": "Generar datos",
                 "title": "JSON AI Inspector",
                 "json_input": "Ingresa tu JSON",
                 "format_btn": "Formatear JSON",
@@ -139,8 +142,16 @@ class JSONInspectorUI:
                 "mock_data_history": "Data History",
                 "mock_data_help": "Help",
                 "mock_data_help_text": "Use this generator to create mock data based on a JSON structure. Define data types using a simple JSON structure.",
+                "ai_assistant_title": "Asistente de IA",
+                "ai_assistant_prompt": "Puedes preguntar sobre el JSON más reciente",
+                "response_label": "Respuesta",
+                "error_label": "Error",
+                "question_placeholder": "Escribe tu pregunta para AI aquí..."
             },
             "English": {
+                "mock_data_input": "Enter the JSON structure",
+                "mock_data_records": "Number of records",
+                "generate_mock_btn": "Generate Data",
                 "title": "JSON AI Inspector",
                 "json_input": "Enter your JSON",
                 "format_btn": "Format JSON",
@@ -175,15 +186,22 @@ class JSONInspectorUI:
                 "base_name_label": "Base name for types",
                 "mock_data_title": "3. Data Generation",
                 "mock_data_description": "Generate dummy data based on JSON structure.",
+                "mock_data_input": "Enter the JSON structure",
                 "mock_data_example_title": "Example Structure",
                 "mock_data_example_description": "You can use this structure as a base and modify it according to your needs. Supported types are: string, integer, number, boolean, date, email, phone, url, objectId and array<type>.",
                 "num_records_label": "Number of records (max. 1000)",
-                "generate_mock_btn": "Generate Data",
+                "mock_data_records": "Number of records",
+                "mock_data_btn": "Generate Data",
                 "mock_data_success": "Data generated successfully",
                 "mock_data_error": "Error generating data",
                 "mock_data_json": "Generated JSON",
                 "mock_data_export": "Export JSON",
                 "mock_data_history": "Generated data history",
+                "ai_assistant_title": "AI Assistant",
+                "ai_assistant_prompt": "You can ask about the latest JSON",
+                "response_label": "Response",
+                "error_label": "Error",
+                "question_placeholder": "Enter your question for AI here..."
             },
         }
         self.t = self.texts[self.lang]
@@ -215,6 +233,11 @@ class JSONInspectorUI:
     def format_section(self):
         """Sección para formatear JSON."""
         st.header("1. Formateo")
+        # Si hay un pending_load_json, actualizar y recargar
+        if "pending_load_json" in st.session_state:
+            st.session_state["format_json_input"] = st.session_state["pending_load_json"]
+            del st.session_state["pending_load_json"]
+            st.experimental_rerun()
         json_input = st.text_area(self.t["json_input"], key="format_json_input")
 
         if st.button(self.t["format_btn"], key="format_btn"):
@@ -265,34 +288,14 @@ class JSONInspectorUI:
                 "messages": [
                     {
                         "role": "system",
-                        "content": "Eres un experto analista de datos JSON. No respondas nada que no esté relacionado directamente con el JSON.",
+                        "content": "Eres un experto analista de datos JSON. No respondas nada que no esté relacionado directamente con el JSON."
                     },
-                    {"role": "user", "content": prompt},
+                    {"role": "user", "content": prompt}
                 ],
-                "temperature": 0.3,
-            },
+                "temperature": 0.3
+            }
         )
         return res.json().get("choices", [{}])[0].get("message", {}).get("content", "Sin respuesta")
-
-    def ai_section(self):
-        """Sección de análisis con IA."""
-        st.header("2. IA")
-        question = st.text_input(self.t["question_label"])
-
-        if st.button(self.t["ask_btn"]):
-            if st.session_state["ia_uses"] >= 3:
-                st.warning(self.t["limit_msg"])
-            elif not is_json_related(question):
-                st.warning(self.t["invalid_question"])
-            elif st.session_state["json_history"]:
-                latest = st.session_state["json_history"][-1]["json"]
-                st.session_state["ia_uses"] += 1
-                try:
-                    response = self.ask_ai(question, latest)
-                    st.write("**Respuesta:**")
-                    st.write(response)
-                except Exception as e:
-                    st.error(f"Error al preguntar: {e}")
 
     def compare_section(self):
         """Sección para comparar dos JSONs."""
@@ -425,17 +428,35 @@ class JSONInspectorUI:
         if not json_history:
             st.sidebar.info(self.t["history_empty"])
         else:
+            # Botón Copilot AI solo si hay historial
+            ai_expander = None
+            if len(json_history) > 0:
+                if st.sidebar.button(self.t["ask_btn"], key="ai_copilot_btn"):
+                    st.session_state["show_ai_expander"] = True
+            if st.session_state.get("show_ai_expander", False):
+                with st.sidebar.expander(self.t["ai_assistant_title"], expanded=True):
+                    st.markdown(f"<small>{self.t['ai_assistant_prompt']}</small>", unsafe_allow_html=True)
+                    latest_json = json_history[-1]["json"]
+                    ai_question = st.text_input(self.t["question_label"], key="ai_sidebar_question", placeholder=self.t["question_placeholder"])
+                    st.code(json.dumps(latest_json, indent=2), language="json")
+                    if st.button(self.t["ask_btn"], key="ai_sidebar_ask_btn"):
+                        try:
+                            response = self.ask_ai(ai_question, latest_json)
+                            st.markdown(f"**{self.t['response_label']}:** {response}")
+                        except Exception as e:
+                            st.error(f"{self.t['error_label']}: {e}")
             for idx, item in enumerate(reversed(json_history)):
                 with st.sidebar.expander(f"📅 {item['timestamp']}"):
                     st.code(json.dumps(item['json'], indent=2), language="json")
-
+                    if st.button("Cargar en editor", key=f"load_json_{idx}"):
+                        st.session_state["pending_load_json"] = json.dumps(item['json'], indent=2)
+                        st.experimental_rerun()
 
     def run(self):
         """Ejecutar la aplicación."""
         self.format_section()
         self.compare_section()
         self.mock_data_section()
-        self.ai_section()
         self.render_history()
 
 
