@@ -389,7 +389,6 @@ class JSONInspectorUI:
     def render_history(self):
         """Renderizar historial de JSON."""
         col1, col2, col3 = st.columns(3)
-        # Aquí debes definir o recuperar json_input según corresponda, por ejemplo del estado de sesión o como argumento
         json_input = st.session_state.get("format_json_input", "")
 
         if col2.button(self.t["export_csv_btn"], key="export_csv_btn"):
@@ -411,17 +410,25 @@ class JSONInspectorUI:
             if success:
                 st.header(self.t["types_title"])
                 tabs = st.tabs([self.t["python_tab"], self.t["typescript_tab"], self.t["golang_tab"]])
-                
                 with tabs[0]:
                     st.code(types["python"], language="python")
-                
                 with tabs[1]:
                     st.code(types["typescript"], language="typescript")
-                
                 with tabs[2]:
                     st.code(types["golang"], language="go")
             else:
                 st.error(f"❌ {self.t['types_error']}: {error_msg}")
+
+        # Mostrar historial en la barra lateral
+        st.sidebar.subheader(self.t["history_title"])
+        json_history = st.session_state.get("json_history", [])
+        if not json_history:
+            st.sidebar.info(self.t["history_empty"])
+        else:
+            for idx, item in enumerate(reversed(json_history)):
+                with st.sidebar.expander(f"📅 {item['timestamp']}"):
+                    st.code(json.dumps(item['json'], indent=2), language="json")
+
 
     def run(self):
         """Ejecutar la aplicación."""
